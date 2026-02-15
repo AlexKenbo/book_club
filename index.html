@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Книжный клуб ЦХМ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        #global-error { display: none; padding: 20px; text-align: center; font-family: sans-serif; height: 100vh; flex-direction: column; align-items: center; justify-content: center; background: #fafaf9; }
+    </style>
+    <!-- GLOBAL ERROR HANDLER: Catches errors before React loads -->
+    <script>
+      window.addEventListener('error', function(event) {
+        const root = document.getElementById('root');
+        // Only show if React hasn't rendered anything significant yet
+        if (root && (!root.innerHTML || root.innerHTML.trim() === '')) {
+           const container = document.getElementById('global-error');
+           const msg = document.getElementById('error-msg');
+           const trace = document.getElementById('error-trace');
+           if (container && msg && trace) {
+               container.style.display = 'flex';
+               msg.textContent = 'Критическая ошибка запуска';
+               trace.textContent = event.message + '\n' + event.filename + ':' + event.lineno;
+               document.getElementById('root').style.display = 'none';
+           }
+        }
+      });
+      
+      function hardReset() {
+        if(confirm('Сбросить базу данных и перезагрузить?')) {
+            // Delete Dexie DBs
+            if (window.indexedDB && window.indexedDB.databases) {
+                window.indexedDB.databases().then(dbs => {
+                    dbs.forEach(db => {
+                        if (db.name) window.indexedDB.deleteDatabase(db.name);
+                    });
+                    localStorage.clear();
+                    window.location.reload();
+                });
+            } else {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+      }
+    </script>
+
+</head>
+<body class="bg-stone-50 text-slate-900 overflow-x-hidden">
+    <div id="root"></div>
+    
+    <!-- Fallback UI for boot errors -->
+    <div id="global-error">
+        <div style="width: 60px; height: 60px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#dc2626" style="width: 30px; height: 30px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+        </div>
+        <h1 id="error-msg" style="font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #1c1917;">Ошибка</h1>
+        <pre id="error-trace" style="background: #e7e5e4; padding: 10px; border-radius: 8px; font-size: 11px; max-width: 90%; overflow: auto; margin-bottom: 20px; color: #44403c;"></pre>
+        <button onclick="hardReset()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);">
+            Сбросить базу данных (Hard Reset)
+        </button>
+        <p style="font-size: 12px; color: #78716c; margin-top: 15px;">Это удалит локальные данные и перезагрузит страницу.</p>
+    </div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

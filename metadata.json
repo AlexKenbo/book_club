@@ -1,0 +1,8 @@
+
+{
+  "name": "Книжный клуб ЦХМ",
+  "description": "A social home library management system where users can digitize their books, share them with others, track lending, and manage reservations using Dexie Cloud.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
