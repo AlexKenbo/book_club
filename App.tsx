@@ -383,7 +383,7 @@ const App: React.FC = () => {
                   />
                 }
               />
-              <Route path="/demo-access" element={<DemoActivator onEnable={enableDemo} />} />
+              <Route path="/demo" element={<DemoActivator onEnable={enableDemo} />} />
               <Route
                 path="/auth"
                 element={
