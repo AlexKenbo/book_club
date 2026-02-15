@@ -130,23 +130,15 @@ const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showA
           <div>
             <h2 className="text-lg font-serif font-bold text-stone-900 mb-1">Войдите, чтобы брать книги</h2>
             <p className="text-sm text-stone-500">
-              Авторизуйтесь по номеру телефона или запустите демо-режим.
+              Авторизуйтесь по номеру телефона.
             </p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate('/auth')}
-              className="px-4 py-2 bg-stone-900 text-white rounded-xl text-sm font-bold"
-            >
-              Войти
-            </button>
-            <button
-              onClick={() => onEnableDemo?.()}
-              className="px-4 py-2 bg-stone-100 text-stone-700 rounded-xl text-sm font-bold"
-            >
-              DEMO MODE
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-4 py-2 bg-stone-900 text-white rounded-xl text-sm font-bold"
+          >
+            Войти
+          </button>
         </div>
       )}
       <header>

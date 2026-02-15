@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from '../components/Layout';
 import { getSupabase, setSessionToken } from '../lib/supabaseClient';
-import { PhoneIcon, KeyIcon, ArrowLeftIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, KeyIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 interface AuthProps {
   onEnableDemo: () => void;
@@ -166,21 +166,6 @@ const Auth: React.FC<AuthProps> = ({ onEnableDemo, onSignedIn }) => {
         </div>
       </div>
 
-      <div className="bg-stone-50 border border-dashed border-stone-200 rounded-3xl p-6 text-center space-y-3">
-        <div className="flex items-center justify-center gap-2 text-amber-700">
-          <SparklesIcon className="w-4 h-4" />
-          <span className="text-xs font-black uppercase tracking-widest">Демо режим</span>
-        </div>
-        <p className="text-sm text-stone-500">
-          Можно сразу посмотреть библиотеку и сценарии — без входа.
-        </p>
-        <button
-          onClick={onEnableDemo}
-          className="px-5 py-2.5 bg-white border border-stone-200 rounded-xl text-stone-700 font-bold hover:bg-stone-100"
-        >
-          Включить DEMO MODE
-        </button>
-      </div>
     </div>
   );
 };

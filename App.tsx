@@ -30,6 +30,11 @@ import {
 const DEMO_MODE_KEY = 'libshare_demo_mode';
 const ACTIVE_USER_KEY = 'libshare_active_user';
 
+const DemoActivator: React.FC<{ onEnable: () => void }> = ({ onEnable }) => {
+  useEffect(() => { onEnable(); }, []);
+  return null;
+};
+
 const App: React.FC = () => {
   const [activeMockUserId, setActiveMockUserId] = useState(() =>
     localStorage.getItem(ACTIVE_USER_KEY) || MOCK_USER_A.id
@@ -378,6 +383,7 @@ const App: React.FC = () => {
                   />
                 }
               />
+              <Route path="/demo-access" element={<DemoActivator onEnable={enableDemo} />} />
               <Route
                 path="/auth"
                 element={
