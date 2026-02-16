@@ -7,6 +7,7 @@ import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 import { Book, BorrowRequest, UserProfile } from './types';
 import { useState, useEffect } from 'react';
 import { getSupabase } from './lib/supabaseClient';
+import { logger } from './lib/logger';
 
 // Initialize RxDB plugins
 // Note: Storage plugins don't need to be added via addRxPlugin in RxDB v16
@@ -191,11 +192,11 @@ let replicationStates: any[] = [];
 const startReplication = async (db: LibraryDatabase) => {
     const supabase = getSupabase();
     if (!supabase) {
-        console.log('Supabase credentials not found. Running in local-only mode.');
+        logger.info('Supabase credentials not found, running in local-only mode');
         return;
     }
 
-    console.log('Starting Supabase replication...');
+    logger.info('Starting Supabase replication');
 
     const collections = [
         { name: 'books', table: 'books' },
@@ -230,7 +231,7 @@ const startReplication = async (db: LibraryDatabase) => {
         replicationStates.push(replicationState);
         
         replicationState.error$.subscribe(err => {
-            console.error(`Replication error on ${col.name}:`, err);
+            logger.error(`Replication error on ${col.name}`, { error: String(err) });
         });
     }
 };
@@ -239,41 +240,39 @@ const _create = async () => {
     let db: LibraryDatabase;
     
     try {
-        console.log('Attempting to create RxDB with Dexie storage...');
+        logger.info('Creating RxDB with Dexie storage');
         const dexieStorage = getRxStorageDexie();
-        console.log('Dexie storage function:', typeof dexieStorage);
-        
+
         db = await createRxDatabase<LibraryDatabaseCollections>({
             name: 'libsharedb_rx_v3', // Incremented version to force reset schema
             storage: dexieStorage
         });
-        console.log('RxDB (Dexie) created successfully');
+        logger.info('RxDB (Dexie) created successfully');
     } catch (err: any) {
-        console.warn('Failed to create RxDB with Dexie storage. Falling back to Memory storage.', err);
-        console.warn('Error details:', err?.message || err?.toString());
-        console.warn('Error code:', err?.code);
-        console.warn('Error parameters:', err?.parameters);
-        
+        logger.warn('Failed to create RxDB with Dexie, falling back to Memory', {
+            error: err?.message || String(err),
+            code: err?.code,
+        });
+
         try {
-            console.log('Attempting to create RxDB with Memory storage...');
+            logger.info('Creating RxDB with Memory storage');
             const memoryStorage = getRxStorageMemory();
-            console.log('Memory storage function:', typeof memoryStorage);
-            
+
             db = await createRxDatabase<LibraryDatabaseCollections>({
                 name: 'libsharedb_rx_mem_' + Date.now(),
                 storage: memoryStorage
             });
-            console.log('RxDB (Memory) created successfully.');
+            logger.info('RxDB (Memory) created successfully');
         } catch (memErr: any) {
-            console.error('Failed to create RxDB with Memory storage as well.', memErr);
-            console.error('Error details:', memErr?.message || memErr?.toString());
-            console.error('Error code:', memErr?.code);
-            console.error('Error parameters:', memErr?.parameters);
+            logger.error('Failed to create RxDB with Memory storage', {
+                error: memErr?.message || String(memErr),
+                code: memErr?.code,
+            });
             throw memErr;
         }
     }
 
-    console.log('Adding collections to database...');
+    logger.info('Adding collections to database');
     await db.addCollections({
         books: {
             schema: bookSchema,
@@ -290,7 +289,7 @@ const _create = async () => {
             }
         }
     });
-    console.log('Collections added successfully');
+    logger.info('Collections added successfully');
 
     // Hook to update 'updatedAt' on saving documents locally
     const collections = ['books', 'requests', 'profiles'];
@@ -358,7 +357,7 @@ export function useRxQuery<T>(queryFn: (db: LibraryDatabase) => any, deps: any[]
                     if (isMounted) setData(queryOrValue);
                 }
             } catch (error) {
-                console.error("useRxQuery error:", error);
+                logger.error('useRxQuery error', { error: (error as Error)?.message ?? String(error) });
             }
         };
 

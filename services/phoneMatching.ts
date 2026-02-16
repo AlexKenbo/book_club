@@ -1,6 +1,7 @@
 
 import { getSupabase } from '../lib/supabaseClient';
 import { normalizePhone } from '../lib/phoneUtils';
+import { logger } from '../lib/logger';
 
 /**
  * При входе пользователя — ищет книги и заявки с совпадающим телефоном
@@ -32,12 +33,12 @@ export const matchPhoneRecords = async (userId: string, phone: string) => {
             })
             .eq('id', book.id);
 
-          console.log(`Matched book ${book.id} to user ${userId}`);
+          logger.info(`Matched book to user`, { bookId: book.id, userId });
         }
       }
     }
   } catch (err) {
-    console.warn('Phone matching (books) error:', err);
+    logger.warn('Phone matching (books) error', { error: String(err) });
   }
 
   // 2. Заявки: borrower с временным профилем (is_public=false)
@@ -66,12 +67,12 @@ export const matchPhoneRecords = async (userId: string, phone: string) => {
               })
               .eq('id', req.id);
 
-            console.log(`Matched request ${req.id} to user ${userId}`);
+            logger.info(`Matched request to user`, { requestId: req.id, userId });
           }
         }
       }
     }
   } catch (err) {
-    console.warn('Phone matching (requests) error:', err);
+    logger.warn('Phone matching (requests) error', { error: String(err) });
   }
 };

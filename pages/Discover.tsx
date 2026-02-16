@@ -5,6 +5,7 @@ import { getDb, useRxQuery, generateId } from '../db';
 import BookCard from '../components/BookCard';
 import ContactOptionsModal from '../components/ContactOptionsModal';
 import { RequestStatus, Book, BorrowRequest } from '../types';
+import { logger } from '../lib/logger';
 
 interface DiscoverProps {
   userId?: string;
@@ -115,7 +116,7 @@ const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showA
           });
       }
     } catch (err) {
-      console.error(err);
+      logger.error('Failed to send book request', { error: (err as Error)?.message ?? String(err), bookId });
       // Откат оптимистичного обновления при ошибке
       setOptimisticPending(prev => { const s = new Set(prev); s.delete(bookId); return s; });
       alert("Не удалось отправить запрос. Попробуйте снова.");

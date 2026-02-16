@@ -9,6 +9,7 @@ import Requests from './pages/Requests';
 import Auth from './pages/Auth';
 import { getStoredSession, getSupabase, setSessionToken } from './lib/supabaseClient';
 import { matchPhoneRecords } from './services/phoneMatching';
+import { logger } from './lib/logger';
 import { UserProfile } from './types';
 type AuthUser = {
   id: string;
@@ -71,14 +72,14 @@ const App: React.FC = () => {
       .then(({ data, error }) => {
         if (!mounted) return;
         if (error) {
-          console.warn('Failed to fetch auth session:', error.message);
+          logger.warn('Failed to fetch auth session', { error: error.message });
         }
         setAuthUser(data.session?.user ?? null);
         setAuthReady(true);
       })
       .catch(err => {
         if (!mounted) return;
-        console.warn('Failed to fetch auth session:', err);
+        logger.warn('Failed to fetch auth session', { error: String(err) });
         setAuthReady(true);
       });
 
@@ -113,11 +114,11 @@ const App: React.FC = () => {
         );
 
       if (error) {
-        console.warn('Failed to ensure profile:', error.message);
+        logger.warn('Failed to ensure profile', { error: error.message });
       }
 
       if (user.phone) {
-        matchPhoneRecords(user.id, user.phone).catch(console.warn);
+        matchPhoneRecords(user.id, user.phone).catch(err => logger.warn('Phone matching failed', { error: String(err) }));
       }
     };
 
@@ -130,7 +131,7 @@ const App: React.FC = () => {
           await ensureProfile(authUser);
         }
       } catch (e: any) {
-        console.error('Initialization error:', e);
+        logger.error('Initialization error', { error: e.message || String(e) });
         setInitError(e.message || 'Unknown initialization error');
       } finally {
         setIsLoading(false);
@@ -148,7 +149,7 @@ const App: React.FC = () => {
         await db.remove();
         window.location.reload();
       } catch (err) {
-        console.error('Error resetting data:', err);
+        logger.error('Error resetting data', { error: String(err) });
         setIsLoading(false);
       }
     }

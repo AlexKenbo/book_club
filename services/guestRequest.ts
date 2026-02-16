@@ -1,5 +1,6 @@
 
 import { getSupabase } from '../lib/supabaseClient';
+import { logger } from '../lib/logger';
 
 const generateId = () =>
   Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -30,7 +31,7 @@ export const createGuestRequest = async (params: GuestRequestParams) => {
   });
 
   if (profileError) {
-    console.error('Failed to create guest profile:', profileError);
+    logger.error('Failed to create guest profile', { error: profileError.message });
     throw profileError;
   }
 
@@ -50,7 +51,7 @@ export const createGuestRequest = async (params: GuestRequestParams) => {
   });
 
   if (requestError) {
-    console.error('Failed to create guest request:', requestError);
+    logger.error('Failed to create guest request', { error: requestError.message });
     throw requestError;
   }
 };
@@ -66,7 +67,7 @@ export const fetchOwnerProfile = async (ownerId: string) => {
     .single();
 
   if (error) {
-    console.error('Failed to fetch owner profile:', error);
+    logger.error('Failed to fetch owner profile', { error: error.message, ownerId });
     return null;
   }
 

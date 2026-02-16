@@ -5,6 +5,7 @@ import { getDb, generateId } from '../db';
 import { BookStatus, BookCategory } from '../types';
 import { CameraIcon, ChevronLeftIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { buildStoragePath, fileToBase64, uploadPublicImage } from '../lib/storage';
+import { logger } from '../lib/logger';
 
 const CATEGORIES: BookCategory[] = ['Христианские', 'Художественные', 'Саморазвитие'];
 
@@ -62,7 +63,7 @@ const AddBook: React.FC<{ userId: string; userName: string }> = ({ userId, userN
       });
       navigate('/books');
     } catch (err) {
-      console.error(err);
+      logger.error('Failed to save book', { error: (err as Error)?.message ?? String(err) });
       setIsSaving(false);
     }
   };

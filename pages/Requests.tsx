@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { getDb, useRxQuery } from '../db';
 import { BookStatus, RequestStatus, BorrowRequest } from '../types';
+import { logger } from '../lib/logger';
 import { CheckIcon, XMarkIcon, HandRaisedIcon, PaperAirplaneIcon, PhoneIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 const Requests: React.FC<{ userId: string }> = ({ userId }) => {
@@ -46,7 +47,7 @@ const Requests: React.FC<{ userId: string }> = ({ userId }) => {
              });
         }
     } catch (e) {
-      console.error(e);
+      logger.error('Failed to approve request', { error: (e as Error)?.message ?? String(e), reqId, bookId });
       alert("Ошибка при обновлении статуса");
     }
   };

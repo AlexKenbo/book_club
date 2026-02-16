@@ -6,6 +6,7 @@ import { useNavigate } from '../components/Layout';
 import { UserProfile, Book } from '../types';
 import { getDb } from '../db';
 import { buildStoragePath, fileToBase64, uploadPublicImage } from '../lib/storage';
+import { logger } from '../lib/logger';
 import {
   SparklesIcon,
   BookOpenIcon,
@@ -110,7 +111,7 @@ const Profile: React.FC<ProfileProps> = ({ userId, onSignOut }) => {
       setAvatarPreview(null);
       setIsEditing(false);
     } catch (err) {
-      console.error(err);
+      logger.error('Failed to save profile', { error: (err as Error)?.message ?? String(err) });
       setStatus('Не удалось сохранить профиль.');
     } finally {
       setIsSaving(false);

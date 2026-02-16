@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logger } from './logger';
 
 // ==========================================
 // НАСТРОЙКИ SUPABASE CLOUD
@@ -62,7 +63,7 @@ export const setSessionToken = (token: string | null, payload?: { userId?: strin
 export const getSupabase = () => {
     // Если ключи не заполнены, приложение работает локально (Offline mode)
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        console.warn('Supabase credentials missing. App running in Offline mode.');
+        logger.info('Supabase credentials missing, running in Offline mode');
         return null;
     }
 
@@ -88,7 +89,7 @@ export const getSupabase = () => {
                 supabaseInstance.realtime.setAuth(session.token);
             }
         } catch (error) {
-            console.error('Error initializing Supabase client:', error);
+            logger.error('Error initializing Supabase client', { error: String(error) });
             return null;
         }
     }

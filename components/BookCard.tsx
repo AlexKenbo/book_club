@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { getDb } from '../db';
 import { Book, BookStatus, UserProfile } from '../types';
+import { logger } from '../lib/logger';
 import IssueBookModal from './IssueBookModal';
 import {
   TrashIcon,
@@ -83,7 +84,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, isOwner, currentUserId, onAct
         });
         setShowContactModal(true);
     } catch (err) {
-        console.error(err);
+        logger.error('Failed to open contact modal', { error: String(err), bookId: book.id });
     }
   };
 

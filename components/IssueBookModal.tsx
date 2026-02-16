@@ -4,6 +4,7 @@ import { XMarkIcon, UserIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { UserProfile } from '../types';
 import { normalizePhone } from '../lib/phoneUtils';
 import { getSupabase } from '../lib/supabaseClient';
+import { logger } from '../lib/logger';
 
 interface IssueBookModalProps {
   onClose: () => void;
@@ -38,7 +39,7 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onIssue }) => 
           .ilike('phone_number', `%${normalized}%`);
 
         if (error) {
-          console.warn('Profile search error:', error.message);
+          logger.warn('Profile search error', { error: error.message });
           return;
         }
 
@@ -54,7 +55,7 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onIssue }) => 
 
         setSuggestions(matched);
       } catch (err) {
-        console.warn('Profile search error:', err);
+        logger.warn('Profile search error', { error: String(err) });
       }
     }, 300);
 
