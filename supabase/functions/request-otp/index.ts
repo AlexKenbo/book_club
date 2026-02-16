@@ -10,13 +10,11 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 const SMSC_LOGIN = Deno.env.get('SMSC_LOGIN');
 const SMSC_PASSWORD = Deno.env.get('SMSC_PASSWORD');
-const SMSC_SENDER = Deno.env.get('SMSC_SENDER');
 const SMSC_TEST = Deno.env.get('SMSC_TEST') === 'true';
 const SMSC_DEBUG = Deno.env.get('SMSC_DEBUG') === 'true';
 
 const OTP_SECRET = Deno.env.get('OTP_SECRET') || 'local-otp-secret';
 const OTP_TTL_MINUTES = Number(Deno.env.get('OTP_TTL_MINUTES') || '5');
-const OTP_LENGTH = Number(Deno.env.get('OTP_LENGTH') || '6');
 
 const encoder = new TextEncoder();
 
@@ -26,14 +24,6 @@ const toHex = (buffer: ArrayBuffer) =>
     .join('');
 
 const normalizePhone = (value: string) => value.trim();
-
-const generateCode = (length: number) => {
-  let code = '';
-  for (let i = 0; i < length; i += 1) {
-    code += Math.floor(Math.random() * 10).toString();
-  }
-  return code;
-};
 
 const hashOtp = async (phone: string, code: string) => {
   const data = encoder.encode(`${phone}:${code}:${OTP_SECRET}`);
@@ -83,10 +73,6 @@ serve(async (req: Request) => {
       });
     }
 
-    const code = generateCode(OTP_LENGTH);
-    const codeHash = await hashOtp(normalizedPhone, code);
-    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000).toISOString();
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     await supabase
@@ -94,6 +80,48 @@ serve(async (req: Request) => {
       .update({ used: true })
       .eq('phone', normalizedPhone)
       .eq('used', false);
+
+    let code: string;
+
+    if (SMSC_TEST) {
+      code = '1234';
+      console.log('SMSC_TEST enabled. OTP code:', { phone: normalizedPhone, code });
+    } else {
+      const callUrl = `https://smsc.ru/sys/wait_call.php?login=${encodeURIComponent(
+        SMSC_LOGIN
+      )}&psw=${encodeURIComponent(
+        SMSC_PASSWORD
+      )}&phone=${encodeURIComponent(normalizedPhone)}&fmt=3`;
+
+      const callResponse = await fetch(callUrl);
+      const callResult = await callResponse.json();
+
+      if (!callResponse.ok || callResult?.error) {
+        console.error('SMSC wait_call error:', callResult);
+        const payload: Record<string, unknown> = { error: 'Failed to initiate call' };
+        if (SMSC_DEBUG) {
+          payload.details = callResult ?? null;
+        }
+        return new Response(JSON.stringify(payload), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const firstNumber = Array.isArray(callResult) ? callResult[0] : null;
+      if (!firstNumber) {
+        console.error('SMSC wait_call: unexpected response format', callResult);
+        return new Response(JSON.stringify({ error: 'Unexpected call response' }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      code = firstNumber.slice(-4);
+    }
+
+    const codeHash = await hashOtp(normalizedPhone, code);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000).toISOString();
 
     const { error: insertError } = await supabase.from('otp_codes').insert({
       phone: normalizedPhone,
@@ -110,39 +138,7 @@ serve(async (req: Request) => {
       });
     }
 
-    if (SMSC_TEST) {
-      console.log('SMSC_TEST enabled. OTP generated:', { phone: normalizedPhone, code });
-      return new Response(JSON.stringify({ success: true, test: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const message = `Код подтверждения: ${code}`;
-    const senderParam = SMSC_SENDER ? `&sender=${encodeURIComponent(SMSC_SENDER)}` : '';
-    const smsUrl = `https://smsc.ru/sys/send.php?login=${encodeURIComponent(
-      SMSC_LOGIN
-    )}&psw=${encodeURIComponent(
-      SMSC_PASSWORD
-    )}&phones=${encodeURIComponent(normalizedPhone)}&mes=${encodeURIComponent(
-      message
-    )}${senderParam}&fmt=3&charset=utf-8`;
-
-    const smsResponse = await fetch(smsUrl);
-    const smsResult = await smsResponse.json();
-
-    if (!smsResponse.ok || smsResult?.error) {
-      console.error('SMSC error:', smsResult);
-      const payload: Record<string, unknown> = { error: 'Failed to send SMS' };
-      if (SMSC_DEBUG) {
-        payload.details = smsResult ?? null;
-      }
-      return new Response(JSON.stringify(payload), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, test: SMSC_TEST || undefined }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error: any) {

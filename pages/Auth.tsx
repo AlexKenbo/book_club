@@ -37,7 +37,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
     });
 
     if (error || data?.error) {
-      setStatus(error?.message || data?.error || 'Ошибка отправки кода.');
+      setStatus(error?.message || data?.error || 'Ошибка при звонке.');
       setIsLoading(false);
       return;
     }
@@ -54,7 +54,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
     }
 
     if (!code.trim()) {
-      setStatus('Введите код из SMS.');
+      setStatus('Введите 4 последние цифры номера.');
       return;
     }
 
@@ -99,7 +99,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-stone-900">Вход по телефону</h1>
-            <p className="text-xs text-stone-500">Получите код и войдите в личную библиотеку.</p>
+            <p className="text-xs text-stone-500">Вам позвонят — введите 4 последние цифры номера</p>
           </div>
         </div>
 
@@ -117,12 +117,14 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
 
         {step === 'code' && (
           <div className="space-y-4">
-            <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Код из SMS</label>
+            <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Последние 4 цифры номера</label>
             <input
               type="text"
+              inputMode="numeric"
+              maxLength={4}
               value={code}
               onChange={e => setCode(e.target.value)}
-              placeholder="123456"
+              placeholder="1234"
               className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-amber-500 focus:ring-amber-200 focus:outline-none"
             />
           </div>
@@ -141,7 +143,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
               disabled={isLoading}
               className="w-full py-3 bg-stone-900 text-white rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-60"
             >
-              {isLoading ? 'Отправляем...' : 'Получить код'}
+              {isLoading ? 'Звоним...' : 'Позвонить мне'}
             </button>
           ) : (
             <button
