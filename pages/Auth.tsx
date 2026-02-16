@@ -14,7 +14,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ text: string; type: 'error' | 'info' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [channel, setChannel] = useState<'telegram' | 'call'>('telegram');
@@ -22,12 +22,12 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
   const requestOtp = async (via: 'telegram' | 'call' = channel) => {
     const supabase = getSupabase();
     if (!supabase) {
-      setStatus('Supabase не настроен. Проверьте ключи.');
+      setStatus({ text: 'Supabase не настроен. Проверьте ключи.', type: 'error' });
       return;
     }
 
     if (!phone.trim()) {
-      setStatus('Введите номер телефона.');
+      setStatus({ text: 'Введите номер телефона.', type: 'error' });
       return;
     }
 
@@ -46,24 +46,30 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
         if (body?.error) msg = body.error;
         if (body?.details) msg += ` (${JSON.stringify(body.details)})`;
       } catch {}
-      setStatus(msg);
+      setStatus({ text: msg, type: 'error' });
       setIsLoading(false);
       return;
     }
 
     setIsLoading(false);
+    setStatus({
+      text: via === 'call'
+        ? 'Ожидайте звонок — робот продиктует код.'
+        : 'Код отправлен в Telegram.',
+      type: 'info'
+    });
     setStep('code');
   };
 
   const verifyOtp = async () => {
     const supabase = getSupabase();
     if (!supabase) {
-      setStatus('Supabase не настроен. Проверьте ключи.');
+      setStatus({ text: 'Supabase не настроен. Проверьте ключи.', type: 'error' });
       return;
     }
 
     if (!code.trim()) {
-      setStatus(channel === 'call' ? 'Введите код из звонка.' : 'Введите код из Telegram.');
+      setStatus({ text: channel === 'call' ? 'Введите код из звонка.' : 'Введите код из Telegram.', type: 'error' });
       return;
     }
 
@@ -75,7 +81,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
     });
 
     if (error || data?.error || !data?.access_token) {
-      setStatus(error?.message || data?.error || 'Неверный код.');
+      setStatus({ text: error?.message || data?.error || 'Неверный код.', type: 'error' });
       setIsLoading(false);
       return;
     }
@@ -142,8 +148,12 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
         )}
 
         {status && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-2xl px-4 py-3 text-sm">
-            {status}
+          <div className={`rounded-2xl px-4 py-3 text-sm ${
+            status.type === 'info'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+              : 'bg-amber-50 border border-amber-200 text-amber-700'
+          }`}>
+            {status.text}
           </div>
         )}
 
