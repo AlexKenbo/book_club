@@ -163,12 +163,22 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
           )}
 
           {step === 'code' && (
-            <button
-              onClick={() => setStep('phone')}
-              className="text-sm text-stone-500 hover:text-stone-700"
-            >
-              Изменить номер
-            </button>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={requestOtp}
+                disabled={isLoading}
+                className="text-sm text-stone-500 hover:text-stone-700"
+              >
+                Позвонить ещё раз
+              </button>
+              <span className="text-stone-300">|</span>
+              <button
+                onClick={() => setStep('phone')}
+                className="text-sm text-stone-500 hover:text-stone-700"
+              >
+                Изменить номер
+              </button>
+            </div>
           )}
         </div>
       </div>
