@@ -113,7 +113,7 @@ const MyLibrary: React.FC<{ userId: string; userName: string }> = ({ userId, use
         {/* Вкладка: Взял книги */}
         {activeTab === 'reading' && (
           !readingBooks?.length ? (
-            <EmptyState message="Вы пока не взяли книг у друзей." action={() => navigate('/discover')} actionText="Найти книгу" />
+            <EmptyState message="Вы пока не взяли книг у друзей." action={() => navigate('/')} actionText="Найти книгу" />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {readingBooks.map(book => (

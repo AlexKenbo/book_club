@@ -337,10 +337,6 @@ const App: React.FC = () => {
             <>
               <Route
                 path="/"
-                element={<MyLibrary userId={currentUserId as string} userName={currentUserName} />}
-              />
-              <Route
-                path="/discover"
                 element={
                   <Discover
                     userId={currentUserId}
@@ -348,6 +344,10 @@ const App: React.FC = () => {
                     canRequest
                   />
                 }
+              />
+              <Route
+                path="/books"
+                element={<MyLibrary userId={currentUserId as string} userName={currentUserName} />}
               />
               <Route
                 path="/add"
@@ -367,14 +367,14 @@ const App: React.FC = () => {
                   />
                 }
               />
+              <Route path="/discover" element={<Navigate to="/" replace />} />
               <Route path="/auth" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (
             <>
-              <Route path="/" element={<Navigate to="/discover" replace />} />
               <Route
-                path="/discover"
+                path="/"
                 element={
                   <Discover
                     canRequest={false}
@@ -403,7 +403,7 @@ const App: React.FC = () => {
                   />
                 }
               />
-              <Route path="*" element={<Navigate to="/discover" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}
         </Routes>

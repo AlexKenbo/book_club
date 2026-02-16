@@ -60,7 +60,7 @@ const AddBook: React.FC<{ userId: string; userName: string }> = ({ userId, userN
         status: BookStatus.Available,
         createdAt: Date.now()
       });
-      navigate('/');
+      navigate('/books');
     } catch (err) {
       console.error(err);
       setIsSaving(false);

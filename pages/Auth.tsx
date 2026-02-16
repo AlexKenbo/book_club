@@ -86,7 +86,7 @@ const Auth: React.FC<AuthProps> = ({ onEnableDemo, onSignedIn }) => {
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4">
       <button
-        onClick={() => navigate('/discover')}
+        onClick={() => navigate('/')}
         className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-700"
       >
         <ArrowLeftIcon className="w-4 h-4" />

@@ -81,7 +81,7 @@ const BookDetails: React.FC<{ userId: string; userName: string }> = ({ userId, u
       <div className="p-10 text-center">
         <div className="text-5xl mb-4">🤷‍♂️</div>
         <h2 className="text-xl font-bold text-stone-800 mb-2">Книга не найдена</h2>
-        <button onClick={() => navigate('/')} className="text-amber-700 font-bold underline">Вернуться в библиотеку</button>
+        <button onClick={() => navigate('/books')} className="text-amber-700 font-bold underline">Вернуться в библиотеку</button>
       </div>
     );
   }
@@ -100,7 +100,7 @@ const BookDetails: React.FC<{ userId: string; userName: string }> = ({ userId, u
                   const db = await getDb();
                   const doc = await db.books.findOne(id).exec();
                   if (doc) await doc.remove();
-                  navigate('/', { replace: true }); 
+                  navigate('/books', { replace: true });
                 } 
               }} 
               className="p-2 text-stone-400 hover:text-red-500 transition-colors"

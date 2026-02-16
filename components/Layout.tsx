@@ -169,11 +169,11 @@ const Layout: React.FC<{ children: React.ReactNode; canAccessFull: boolean }> = 
   // Updated navigation: Removed 'Add' and 'Profile' from the main list
   const navItems = canAccessFull
     ? [
-        { name: 'Книги', path: '/', icon: BookOpenIcon, activeIcon: BookOpenSolid },
-        { name: 'Поиск', path: '/discover', icon: MagnifyingGlassIcon, activeIcon: MagnifyingGlassSolid },
+        { name: 'Каталог', path: '/', icon: MagnifyingGlassIcon, activeIcon: MagnifyingGlassSolid },
+        { name: 'Мои книги', path: '/books', icon: BookOpenIcon, activeIcon: BookOpenSolid },
         { name: 'Активность', path: '/requests', icon: BellIcon, activeIcon: BellSolid },
       ]
-    : [{ name: 'Поиск', path: '/discover', icon: MagnifyingGlassIcon, activeIcon: MagnifyingGlassSolid }];
+    : [{ name: 'Каталог', path: '/', icon: MagnifyingGlassIcon, activeIcon: MagnifyingGlassSolid }];
 
   return (
     <div className="min-h-screen pb-20 lg:pb-0 lg:pl-64 flex flex-col bg-stone-50 text-stone-900">
