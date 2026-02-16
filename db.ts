@@ -2,10 +2,11 @@
 import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { replicateSupabase } from 'rxdb/plugins/replication-supabase';
+import { replicateRxCollection } from 'rxdb/plugins/replication';
 import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 import { Book, BorrowRequest, UserProfile } from './types';
 import { useState, useEffect } from 'react';
+import { Subject } from 'rxjs';
 import { getSupabase } from './lib/supabaseClient';
 import { logger } from './lib/logger';
 
@@ -205,31 +206,119 @@ const startReplication = async (db: LibraryDatabase) => {
     ];
 
     for (const col of collections) {
-        const replicationState = replicateSupabase({
+        const collection = db[col.name as keyof LibraryDatabaseCollections];
+        const pullStream$ = new Subject<any>();
+
+        const replicationState = replicateRxCollection({
             replicationIdentifier: 'supabase-' + col.name,
-            client: supabase,
-            collection: db[col.name as keyof LibraryDatabaseCollections],
-            tableName: col.table,
-            modifiedField: 'updated_at',
+            collection,
+            deletedField: '_deleted',
             pull: {
-                modifier: (doc) => {
-                    // Convert snake_case from Supabase to camelCase for RxDB
-                    return toRx(doc);
-                }
+                async handler(lastCheckpoint: any, batchSize: number) {
+                    let query = supabase.from(col.table).select('*');
+
+                    if (lastCheckpoint) {
+                        const { modified, id } = lastCheckpoint;
+                        query = query.or(
+                            `updated_at.gt.${modified},and(updated_at.eq.${modified},id.gt.${id})`
+                        );
+                    }
+
+                    query = query
+                        .order('updated_at', { ascending: true })
+                        .order('id', { ascending: true })
+                        .limit(batchSize);
+
+                    const { data, error } = await query;
+                    if (error) throw error;
+
+                    const docs = (data || []).map((row: any) => {
+                        const doc = toRx(row);
+                        doc._deleted = !!row._deleted;
+                        return doc;
+                    });
+
+                    const lastDoc = data && data.length > 0 ? data[data.length - 1] : null;
+                    const checkpoint = lastDoc
+                        ? { id: lastDoc.id, modified: lastDoc.updated_at }
+                        : lastCheckpoint;
+
+                    return { documents: docs, checkpoint };
+                },
+                batchSize: 100,
+                stream$: pullStream$.asObservable()
             },
             push: {
-                modifier: (doc) => {
-                    // Ensure updatedAt is set
-                    if (!doc.updatedAt) doc.updatedAt = new Date().toISOString();
-                    // Convert camelCase to snake_case for Supabase
-                    return toSupabase(doc);
-                }
+                async handler(rows: any[]) {
+                    const conflicts: any[] = [];
+
+                    for (const row of rows) {
+                        const newDoc = toSupabase(row.newDocumentState);
+                        // Clean internal RxDB fields
+                        delete newDoc._rev;
+                        delete newDoc._meta;
+                        delete newDoc._attachments;
+                        // Ensure _deleted and updated_at
+                        newDoc._deleted = !!row.newDocumentState._deleted;
+                        if (!newDoc.updated_at) {
+                            newDoc.updated_at = new Date().toISOString();
+                        }
+
+                        const { error } = await supabase
+                            .from(col.table)
+                            .upsert(newDoc, { onConflict: 'id' });
+
+                        if (error) {
+                            const { data: serverDoc } = await supabase
+                                .from(col.table)
+                                .select('*')
+                                .eq('id', newDoc.id)
+                                .single();
+
+                            if (serverDoc) {
+                                const conflict = toRx(serverDoc);
+                                conflict._deleted = !!serverDoc._deleted;
+                                conflicts.push(conflict);
+                            } else {
+                                throw error;
+                            }
+                        }
+                    }
+
+                    return conflicts;
+                },
+                batchSize: 5
             },
-            autoStart: true,
+            live: true,
+            retryTime: 5000,
+            autoStart: true
         });
-        
+
+        // Supabase Realtime for live pull updates
+        supabase
+            .channel('realtime:' + col.table)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: col.table },
+                (payload: any) => {
+                    if (payload.eventType === 'DELETE') return;
+                    const row = payload.new;
+                    const doc = toRx(row);
+                    doc._deleted = !!row._deleted;
+                    pullStream$.next({
+                        checkpoint: { id: row.id, modified: row.updated_at },
+                        documents: [doc]
+                    });
+                }
+            )
+            .subscribe((status: string) => {
+                if (status === 'SUBSCRIBED') {
+                    pullStream$.next('RESYNC');
+                }
+            });
+
         replicationStates.push(replicationState);
-        
+
         replicationState.error$.subscribe(err => {
             logger.error(`Replication error on ${col.name}`, { error: String(err) });
         });
