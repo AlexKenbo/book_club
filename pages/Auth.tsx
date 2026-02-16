@@ -189,11 +189,19 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
           {step === 'code' && (
             <div className="flex justify-center gap-4">
               <button
-                onClick={() => requestOtp()}
+                onClick={() => requestOtp('telegram')}
                 disabled={isLoading}
                 className="text-sm text-stone-500 hover:text-stone-700"
               >
-                Отправить ещё раз
+                Код в Telegram
+              </button>
+              <span className="text-stone-300">|</span>
+              <button
+                onClick={() => requestOtp('call')}
+                disabled={isLoading}
+                className="text-sm text-stone-500 hover:text-stone-700"
+              >
+                Позвонить
               </button>
               <span className="text-stone-300">|</span>
               <button
