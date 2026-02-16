@@ -210,7 +210,7 @@ const startReplication = async (db: LibraryDatabase) => {
         const pullStream$ = new Subject<any>();
 
         const replicationState = replicateRxCollection({
-            replicationIdentifier: 'supabase-' + col.name,
+            replicationIdentifier: 'supabase-v2-' + col.name,
             collection,
             deletedField: '_deleted',
             pull: {
