@@ -17,7 +17,9 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const requestOtp = async () => {
+  const [channel, setChannel] = useState<'telegram' | 'call'>('telegram');
+
+  const requestOtp = async (via: 'telegram' | 'call' = channel) => {
     const supabase = getSupabase();
     if (!supabase) {
       setStatus('Supabase не настроен. Проверьте ключи.');
@@ -31,13 +33,14 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
 
     setIsLoading(true);
     setStatus(null);
+    setChannel(via);
 
     const { data, error } = await supabase.functions.invoke('request-otp', {
-      body: { phone }
+      body: { phone, channel: via }
     });
 
     if (error || data?.error) {
-      let msg = data?.error || 'Ошибка при звонке.';
+      let msg = data?.error || 'Ошибка отправки кода.';
       try {
         const body = await (error as any)?.context?.json?.();
         if (body?.error) msg = body.error;
@@ -60,7 +63,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
     }
 
     if (!code.trim()) {
-      setStatus('Введите 4 последние цифры номера.');
+      setStatus(channel === 'call' ? 'Введите код из звонка.' : 'Введите код из Telegram.');
       return;
     }
 
@@ -105,7 +108,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-stone-900">Вход по телефону</h1>
-            <p className="text-xs text-stone-500">Вам позвонят — введите 4 последние цифры номера</p>
+            <p className="text-xs text-stone-500">Получите код и войдите в личную библиотеку</p>
           </div>
         </div>
 
@@ -123,7 +126,9 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
 
         {step === 'code' && (
           <div className="space-y-4">
-            <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Последние 4 цифры номера</label>
+            <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+              {channel === 'call' ? 'Код из звонка' : 'Код из Telegram'}
+            </label>
             <input
               type="text"
               inputMode="numeric"
@@ -144,13 +149,22 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
 
         <div className="flex flex-col gap-3">
           {step === 'phone' ? (
-            <button
-              onClick={requestOtp}
-              disabled={isLoading}
-              className="w-full py-3 bg-stone-900 text-white rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-60"
-            >
-              {isLoading ? 'Звоним...' : 'Позвонить мне'}
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => requestOtp('telegram')}
+                disabled={isLoading}
+                className="w-full py-3 bg-stone-900 text-white rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-60"
+              >
+                {isLoading && channel === 'telegram' ? 'Отправляем...' : 'Получить код в Telegram'}
+              </button>
+              <button
+                onClick={() => requestOtp('call')}
+                disabled={isLoading}
+                className="w-full py-3 bg-white text-stone-700 border border-stone-200 rounded-2xl font-bold hover:bg-stone-50 transition-all disabled:opacity-60"
+              >
+                {isLoading && channel === 'call' ? 'Звоним...' : 'Получить звонок с кодом'}
+              </button>
+            </div>
           ) : (
             <button
               onClick={verifyOtp}
@@ -165,11 +179,11 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
           {step === 'code' && (
             <div className="flex justify-center gap-4">
               <button
-                onClick={requestOtp}
+                onClick={() => requestOtp()}
                 disabled={isLoading}
                 className="text-sm text-stone-500 hover:text-stone-700"
               >
-                Позвонить ещё раз
+                Отправить ещё раз
               </button>
               <span className="text-stone-300">|</span>
               <button

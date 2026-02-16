@@ -15,6 +15,7 @@ const SMSC_DEBUG = Deno.env.get('SMSC_DEBUG') === 'true';
 
 const OTP_SECRET = Deno.env.get('OTP_SECRET') || 'local-otp-secret';
 const OTP_TTL_MINUTES = Number(Deno.env.get('OTP_TTL_MINUTES') || '5');
+const OTP_LENGTH = 4;
 
 const encoder = new TextEncoder();
 
@@ -63,7 +64,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const { phone } = await req.json();
+    const { phone, channel = 'telegram' } = await req.json();
     const normalizedPhone = phone ? normalizePhone(phone) : '';
 
     if (!normalizedPhone) {
@@ -81,48 +82,42 @@ serve(async (req: Request) => {
       .eq('phone', normalizedPhone)
       .eq('used', false);
 
-    let code: string;
+    const generateCode = (length: number) => {
+      let c = '';
+      for (let i = 0; i < length; i++) c += Math.floor(Math.random() * 10).toString();
+      return c;
+    };
+
+    const code = generateCode(OTP_LENGTH);
 
     if (SMSC_TEST) {
-      code = '1234';
-      console.log('SMSC_TEST enabled. OTP code:', { phone: normalizedPhone, code });
+      console.log('SMSC_TEST enabled. OTP code:', { phone: normalizedPhone, code, channel });
     } else {
-      const callUrl = `https://smsc.ru/sys/wait_call.php?login=${encodeURIComponent(
+      const message = `Код подтверждения: ${code}`;
+      const channelParam = channel === 'call' ? '&call=1' : '&tg=1';
+      const sendUrl = `https://smsc.ru/sys/send.php?login=${encodeURIComponent(
         SMSC_LOGIN
       )}&psw=${encodeURIComponent(
         SMSC_PASSWORD
-      )}&phone=${encodeURIComponent(normalizedPhone)}&fmt=3`;
+      )}&phones=${encodeURIComponent(normalizedPhone)}&mes=${encodeURIComponent(
+        message
+      )}${channelParam}&fmt=3&charset=utf-8`;
 
-      const callResponse = await fetch(callUrl);
-      const callResult = await callResponse.json();
+      const sendResponse = await fetch(sendUrl);
+      const sendResult = await sendResponse.json();
 
-      if (!callResponse.ok || callResult?.error) {
-        console.error('SMSC wait_call error:', callResult);
-        const payload: Record<string, unknown> = { error: 'Failed to initiate call' };
+      if (!sendResponse.ok || sendResult?.error) {
+        console.error(`SMSC ${channel} error:`, sendResult);
+        const label = channel === 'call' ? 'call' : 'Telegram message';
+        const payload: Record<string, unknown> = { error: `Failed to send ${label}` };
         if (SMSC_DEBUG) {
-          payload.details = callResult ?? null;
+          payload.details = sendResult ?? null;
         }
         return new Response(JSON.stringify(payload), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-
-      // wait_call returns: {"phone":"79093617212","all_phones":["79093617212","77273122737"]}
-      const callerPhone = callResult?.phone;
-      if (!callerPhone) {
-        console.error('SMSC wait_call: no phone in response', callResult);
-        const payload: Record<string, unknown> = { error: 'No caller number received' };
-        if (SMSC_DEBUG) {
-          payload.details = callResult ?? null;
-        }
-        return new Response(JSON.stringify(payload), {
-          status: 502,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      code = callerPhone.slice(-4);
     }
 
     const codeHash = await hashOtp(normalizedPhone, code);
