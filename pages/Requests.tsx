@@ -36,11 +36,13 @@ const Requests: React.FC<{ userId: string }> = ({ userId }) => {
         const bookDoc = await db.books.findOne(bookId).exec();
 
         if (reqDoc && bookDoc) {
+             const reqData = reqDoc.toJSON();
              await reqDoc.patch({ status: RequestStatus.Approved });
-             await bookDoc.patch({ 
-                status: BookStatus.Borrowed, 
-                currentBorrowerId: bId, 
-                currentBorrowerName: bName 
+             await bookDoc.patch({
+                status: BookStatus.Borrowed,
+                currentBorrowerId: bId,
+                currentBorrowerName: bName,
+                currentBorrowerPhone: reqData.borrowerPhone || undefined
              });
         }
     } catch (e) {

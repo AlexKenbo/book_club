@@ -10,6 +10,7 @@ import Auth from './pages/Auth';
 import { seedDatabase, MOCK_USER_A, MOCK_USER_B, MOCK_USER_C } from './services/mockData';
 import { runSystemCheck } from './services/testRunner';
 import { getStoredSession, getSupabase, setSessionToken } from './lib/supabaseClient';
+import { matchPhoneRecords } from './services/phoneMatching';
 import { UserProfile } from './types';
 type AuthUser = {
   id: string;
@@ -152,6 +153,10 @@ const App: React.FC = () => {
 
       if (error) {
         console.warn('Failed to ensure profile:', error.message);
+      }
+
+      if (user.phone) {
+        matchPhoneRecords(user.id, user.phone).catch(console.warn);
       }
     };
 

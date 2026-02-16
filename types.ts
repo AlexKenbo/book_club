@@ -23,6 +23,7 @@ export interface Book {
   status: BookStatus;
   currentBorrowerId?: string;
   currentBorrowerName?: string;
+  currentBorrowerPhone?: string;
   createdAt: number;
   updatedAt: string; // ISO string for Supabase sync
 }

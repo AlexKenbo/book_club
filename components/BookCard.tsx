@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { getDb } from '../db';
 import { Book, BookStatus, UserProfile } from '../types';
-import { 
-  TrashIcon, 
-  ArrowUturnLeftIcon, 
+import IssueBookModal from './IssueBookModal';
+import {
+  TrashIcon,
+  ArrowUturnLeftIcon,
   HandRaisedIcon,
   ClockIcon,
   CalendarDaysIcon,
@@ -16,7 +17,8 @@ import {
   PhoneIcon,
   XMarkIcon,
   UserCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  GiftIcon
 } from '@heroicons/react/24/outline';
 
 interface BookCardProps {
@@ -24,13 +26,15 @@ interface BookCardProps {
   isOwner: boolean;
   currentUserId?: string; // Need this to check if I am the borrower
   onAction: (action: 'delete' | 'return' | 'request' | 'reserve') => void;
+  onIssue?: (name: string, phone: string, profileId?: string) => void;
   actionLoading?: boolean;
   hasPendingRequest?: boolean;
 }
 
-const BookCard: React.FC<BookCardProps> = ({ book, isOwner, currentUserId, onAction, actionLoading = false, hasPendingRequest = false }) => {
+const BookCard: React.FC<BookCardProps> = ({ book, isOwner, currentUserId, onAction, onIssue, actionLoading = false, hasPendingRequest = false }) => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showIssueModal, setShowIssueModal] = useState(false);
   const [borrowerProfile, setBorrowerProfile] = useState<UserProfile | null>(null);
   
   const handleActionClick = (e: React.MouseEvent, action: 'delete' | 'return' | 'request' | 'reserve') => {
@@ -51,18 +55,31 @@ const BookCard: React.FC<BookCardProps> = ({ book, isOwner, currentUserId, onAct
 
   const handleOpenContactModal = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!book.currentBorrowerId) return;
+
+    // Офлайн-читатель (нет currentBorrowerId) — берём данные из полей книги
+    if (!book.currentBorrowerId) {
+        setBorrowerProfile({
+            id: '',
+            name: book.currentBorrowerName || 'Неизвестный',
+            phoneNumber: book.currentBorrowerPhone,
+            isPublic: false,
+            updatedAt: ''
+        });
+        setShowContactModal(true);
+        return;
+    }
 
     try {
         const db = await getDb();
         const profileDoc = await db.profiles.findOne(book.currentBorrowerId).exec();
         const profile = profileDoc ? profileDoc.toJSON() : null;
-        
+
         // Если профиль не найден (редкий кейс), создаем заглушку из данных книги
-        setBorrowerProfile(profile || { 
-            id: book.currentBorrowerId, 
-            name: book.currentBorrowerName || 'Неизвестный', 
-            isPublic: false 
+        setBorrowerProfile(profile || {
+            id: book.currentBorrowerId,
+            name: book.currentBorrowerName || 'Неизвестный',
+            isPublic: false,
+            updatedAt: ''
         });
         setShowContactModal(true);
     } catch (err) {
@@ -243,9 +260,17 @@ const BookCard: React.FC<BookCardProps> = ({ book, isOwner, currentUserId, onAct
             </>
           )}
           
-          {/* Для владельца, если книга на полке - пустое место или ничего, чтобы не было "gaps" */}
+          {/* Для владельца, если книга на полке — кнопка "Выдать" */}
           {isOwner && book.status === BookStatus.Available && (
-               <div className="h-[38px]"></div> // Spacer to keep card height consistent with others
+               <button
+                 type="button"
+                 onClick={(e) => { e.stopPropagation(); setShowIssueModal(true); }}
+                 disabled={actionLoading}
+                 className="w-full py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95 cursor-pointer"
+               >
+                 <GiftIcon className="w-4 h-4" />
+                 Выдать
+               </button>
           )}
         </div>
       </div>
@@ -297,6 +322,14 @@ const BookCard: React.FC<BookCardProps> = ({ book, isOwner, currentUserId, onAct
                 </div>
             </div>
         </div>
+      )}
+
+      {/* МОДАЛЬНОЕ ОКНО ВЫДАЧИ */}
+      {showIssueModal && onIssue && (
+        <IssueBookModal
+          onClose={() => setShowIssueModal(false)}
+          onIssue={onIssue}
+        />
       )}
 
       {/* МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ */}

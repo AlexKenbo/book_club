@@ -46,6 +46,7 @@ const toRx = (data: any) => {
         'image_url': 'imageUrl',
         'current_borrower_id': 'currentBorrowerId',
         'current_borrower_name': 'currentBorrowerName',
+        'current_borrower_phone': 'currentBorrowerPhone',
         'created_at': 'createdAt',
         'updated_at': 'updatedAt',
         'book_id': 'bookId',
@@ -82,6 +83,7 @@ const toSupabase = (data: any) => {
         'imageUrl': 'image_url',
         'currentBorrowerId': 'current_borrower_id',
         'currentBorrowerName': 'current_borrower_name',
+        'currentBorrowerPhone': 'current_borrower_phone',
         'createdAt': 'created_at',
         'updatedAt': 'updated_at',
         'bookId': 'book_id',
@@ -111,7 +113,7 @@ const toSupabase = (data: any) => {
 // --- Schemas ---
 
 const bookSchema = {
-    version: 0,
+    version: 1,
     primaryKey: 'id',
     type: 'object',
     properties: {
@@ -123,6 +125,7 @@ const bookSchema = {
         status: { type: 'string' },
         currentBorrowerId: { type: 'string', maxLength: 100 },
         currentBorrowerName: { type: 'string' },
+        currentBorrowerPhone: { type: 'string' },
         createdAt: { type: 'number', minimum: 0, maximum: 100000000000000, multipleOf: 1 },
         updatedAt: { type: 'string', maxLength: 100 },
         updated_at: { type: 'string', maxLength: 100 }
@@ -303,7 +306,12 @@ const _create = async () => {
 
     console.log('Adding collections to database...');
     await db.addCollections({
-        books: { schema: bookSchema },
+        books: {
+            schema: bookSchema,
+            migrationStrategies: {
+                1: (doc: any) => doc
+            }
+        },
         requests: { schema: requestSchema },
         profiles: {
             schema: profileSchema,

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from '../components/Layout';
 import { getDb, useRxQuery, generateId } from '../db';
 import BookCard from '../components/BookCard';
+import ContactOptionsModal from '../components/ContactOptionsModal';
 import { RequestStatus, Book, BorrowRequest } from '../types';
 
 interface DiscoverProps {
@@ -17,6 +18,7 @@ const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showA
   const navigate = useNavigate();
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [optimisticPending, setOptimisticPending] = useState<Set<string>>(new Set());
+  const [contactBook, setContactBook] = useState<{ id: string; imageUrl: string; ownerId: string; ownerName: string } | null>(null);
 
   // Получаем книги (чужие)
   const books = useRxQuery<Book[]>(db => 
@@ -69,7 +71,7 @@ const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showA
     if (!bookId) return;
 
     if (!canRequest || !userId || !userName) {
-      navigate('/auth');
+      setContactBook({ id: bookId, imageUrl, ownerId, ownerName });
       return;
     }
     
@@ -176,6 +178,17 @@ const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showA
             </div>
           ))}
         </div>
+      )}
+
+      {contactBook && (
+        <ContactOptionsModal
+          bookId={contactBook.id}
+          bookImageUrl={contactBook.imageUrl}
+          ownerId={contactBook.ownerId}
+          ownerName={contactBook.ownerName}
+          onClose={() => setContactBook(null)}
+          onNavigateAuth={() => navigate('/auth')}
+        />
       )}
     </div>
   );

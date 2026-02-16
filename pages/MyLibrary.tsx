@@ -32,6 +32,21 @@ const MyLibrary: React.FC<{ userId: string; userName: string }> = ({ userId, use
     [userId]
   );
 
+  // Выдать книгу (зарегистрированному пользователю или офлайн-человеку)
+  const handleIssueBook = async (bookId: string | undefined, name: string, phone: string, profileId?: string) => {
+    if (!bookId) return;
+    const db = await getDb();
+    const bookDoc = await db.books.findOne(bookId).exec();
+    if (bookDoc) {
+      await bookDoc.patch({
+        status: BookStatus.Borrowed,
+        currentBorrowerName: name,
+        currentBorrowerPhone: phone || undefined,
+        currentBorrowerId: profileId || ''
+      });
+    }
+  };
+
   // Обработчики действий
   const handleBookAction = async (bookId: string | undefined, action: 'delete' | 'return' | 'request' | 'reserve') => {
     if (!bookId) return;
@@ -43,10 +58,11 @@ const MyLibrary: React.FC<{ userId: string; userName: string }> = ({ userId, use
     }
 
     if (action === 'return' && bookDoc) {
-      await bookDoc.patch({ 
-        status: BookStatus.Available, 
-        currentBorrowerId: undefined, 
-        currentBorrowerName: undefined 
+      await bookDoc.patch({
+        status: BookStatus.Available,
+        currentBorrowerId: undefined,
+        currentBorrowerName: undefined,
+        currentBorrowerPhone: undefined
       });
     }
   };
@@ -98,12 +114,13 @@ const MyLibrary: React.FC<{ userId: string; userName: string }> = ({ userId, use
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {myBooks.map(book => (
-                <BookCard 
-                  key={book.id} 
-                  book={book} 
+                <BookCard
+                  key={book.id}
+                  book={book}
                   isOwner={true}
-                  currentUserId={userId} 
-                  onAction={(a) => handleBookAction(book.id, a)} 
+                  currentUserId={userId}
+                  onAction={(a) => handleBookAction(book.id, a)}
+                  onIssue={(name, phone, profileId) => handleIssueBook(book.id, name, phone, profileId)}
                 />
               ))}
             </div>
