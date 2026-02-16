@@ -37,7 +37,13 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
     });
 
     if (error || data?.error) {
-      setStatus(error?.message || data?.error || 'Ошибка при звонке.');
+      let msg = data?.error || 'Ошибка при звонке.';
+      try {
+        const body = await (error as any)?.context?.json?.();
+        if (body?.error) msg = body.error;
+        if (body?.details) msg += ` (${JSON.stringify(body.details)})`;
+      } catch {}
+      setStatus(msg);
       setIsLoading(false);
       return;
     }
