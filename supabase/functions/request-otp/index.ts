@@ -108,16 +108,33 @@ serve(async (req: Request) => {
         });
       }
 
-      const firstNumber = Array.isArray(callResult) ? callResult[0] : null;
-      if (!firstNumber) {
+      // wait_call returns: array of phone numbers, or object with "phones" key
+      let phones: string[];
+      if (Array.isArray(callResult)) {
+        phones = callResult;
+      } else if (Array.isArray(callResult?.phones)) {
+        phones = callResult.phones;
+      } else {
         console.error('SMSC wait_call: unexpected response format', callResult);
-        return new Response(JSON.stringify({ error: 'Unexpected call response' }), {
+        const payload: Record<string, unknown> = { error: 'Unexpected call response' };
+        if (SMSC_DEBUG) {
+          payload.details = callResult ?? null;
+        }
+        return new Response(JSON.stringify(payload), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      code = firstNumber.slice(-4);
+      if (!phones[0]) {
+        console.error('SMSC wait_call: empty phones array', callResult);
+        return new Response(JSON.stringify({ error: 'No caller number received' }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      code = phones[0].slice(-4);
     }
 
     const codeHash = await hashOtp(normalizedPhone, code);
