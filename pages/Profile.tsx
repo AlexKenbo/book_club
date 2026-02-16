@@ -6,10 +6,8 @@ import { useNavigate } from '../components/Layout';
 import { UserProfile, Book } from '../types';
 import { getDb } from '../db';
 import { buildStoragePath, fileToBase64, uploadPublicImage } from '../lib/storage';
-import { 
-  SparklesIcon, 
-  ArrowsRightLeftIcon, 
-  ArrowPathIcon,
+import {
+  SparklesIcon,
   BookOpenIcon,
   PlusIcon,
   PhoneIcon,
@@ -21,14 +19,10 @@ import {
 
 interface ProfileProps {
   userId: string;
-  mode: 'demo' | 'live';
-  onSwitchUser?: () => void;
-  onResetData?: () => void;
-  onExitDemo?: () => void;
   onSignOut?: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ userId, mode, onSwitchUser, onResetData, onExitDemo, onSignOut }) => {
+const Profile: React.FC<ProfileProps> = ({ userId, onSignOut }) => {
   const navigate = useNavigate();
   const profile = useRxQuery<UserProfile>(db => db.profiles.findOne(userId), [userId]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -264,39 +258,12 @@ const Profile: React.FC<ProfileProps> = ({ userId, mode, onSwitchUser, onResetDa
         <div className="p-4 bg-stone-50 border-b border-stone-200 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Настройки</div>
         <div className="p-6">
           <div className="flex flex-col gap-3">
-            {mode === 'demo' && (
-              <>
-                <button
-                  onClick={onSwitchUser}
-                  className="w-full py-3 bg-stone-50 text-stone-700 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-stone-200 active:scale-95 transition-all"
-                >
-                  <ArrowsRightLeftIcon className="w-4 h-4" />
-                  Переключить на другого пользователя
-                </button>
-                <button
-                  onClick={onResetData}
-                  className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-red-100 active:scale-95 transition-all"
-                >
-                  <ArrowPathIcon className="w-4 h-4" />
-                  Сбросить все данные
-                </button>
-                <button
-                  onClick={onExitDemo}
-                  className="w-full py-3 bg-amber-50 text-amber-700 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-amber-100 active:scale-95 transition-all"
-                >
-                  Выйти из DEMO MODE
-                </button>
-              </>
-            )}
-
-            {mode === 'live' && (
-              <button
-                onClick={onSignOut}
-                className="w-full py-3 bg-stone-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-stone-900 active:scale-95 transition-all"
-              >
-                Выйти из аккаунта
-              </button>
-            )}
+            <button
+              onClick={onSignOut}
+              className="w-full py-3 bg-stone-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-stone-900 active:scale-95 transition-all"
+            >
+              Выйти из аккаунта
+            </button>
           </div>
         </div>
       </section>

@@ -4,13 +4,12 @@ import { getSupabase, setSessionToken } from '../lib/supabaseClient';
 import { PhoneIcon, KeyIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 interface AuthProps {
-  onEnableDemo: () => void;
   onSignedIn?: () => void;
 }
 
 type Step = 'phone' | 'code';
 
-const Auth: React.FC<AuthProps> = ({ onEnableDemo, onSignedIn }) => {
+const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');

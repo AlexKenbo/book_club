@@ -188,38 +188,7 @@ export type LibraryDatabase = RxDatabase<LibraryDatabaseCollections>;
 let dbPromise: Promise<LibraryDatabase> | null = null;
 let replicationStates: any[] = [];
 
-const isDemoMode = () => {
-    return typeof window !== 'undefined' && localStorage.getItem('libshare_demo_mode') === 'true';
-};
-
-const DEMO_USER_IDS = ['demo_user_librarian', 'demo_user_reader', 'demo_user_fiction'];
-
-const removeDemoData = async (db: LibraryDatabase) => {
-    const profiles = await db.profiles.find({ selector: { id: { $in: DEMO_USER_IDS } } }).exec();
-    await Promise.all(profiles.map(doc => doc.remove()));
-
-    const books = await db.books.find({ selector: { ownerId: { $in: DEMO_USER_IDS } } }).exec();
-    await Promise.all(books.map(doc => doc.remove()));
-
-    const requests = await db.requests
-        .find({
-            selector: {
-                $or: [
-                    { lenderId: { $in: DEMO_USER_IDS } },
-                    { borrowerId: { $in: DEMO_USER_IDS } }
-                ]
-            }
-        })
-        .exec();
-    await Promise.all(requests.map(doc => doc.remove()));
-};
-
 const startReplication = async (db: LibraryDatabase) => {
-    if (isDemoMode()) {
-        console.log('Demo mode enabled. Skipping Supabase replication.');
-        return;
-    }
-
     const supabase = getSupabase();
     if (!supabase) {
         console.log('Supabase credentials not found. Running in local-only mode.');
@@ -333,10 +302,6 @@ const _create = async () => {
             docData.updatedAt = new Date().toISOString();
         }, false);
     });
-
-    if (!isDemoMode()) {
-        await removeDemoData(db);
-    }
 
     // Start replication if configured
     startReplication(db);

@@ -11,10 +11,9 @@ interface DiscoverProps {
   userName?: string;
   canRequest: boolean;
   showAuthCta?: boolean;
-  onEnableDemo?: () => void;
 }
 
-const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showAuthCta = false, onEnableDemo }) => {
+const Discover: React.FC<DiscoverProps> = ({ userId, userName, canRequest, showAuthCta = false }) => {
   const navigate = useNavigate();
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [optimisticPending, setOptimisticPending] = useState<Set<string>>(new Set());

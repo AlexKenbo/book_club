@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { XMarkIcon, UserIcon, PhoneIcon } from '@heroicons/react/24/outline';
-import { getDb } from '../db';
 import { UserProfile } from '../types';
 import { normalizePhone } from '../lib/phoneUtils';
+import { getSupabase } from '../lib/supabaseClient';
 
 interface IssueBookModalProps {
   onClose: () => void;
@@ -29,15 +29,29 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onIssue }) => 
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const db = await getDb();
-        const allProfiles = await db.profiles.find().exec();
-        const matched = allProfiles
-          .map((doc: any) => doc.toJSON() as UserProfile)
-          .filter((p: UserProfile) => {
-            if (!p.phoneNumber || !p.isPublic) return false;
-            const pNorm = normalizePhone(p.phoneNumber);
-            return pNorm.startsWith(normalized) || normalized.startsWith(pNorm);
-          });
+        const supabase = getSupabase();
+        if (!supabase) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name, phone_number, avatar_url, is_public')
+          .ilike('phone_number', `%${normalized}%`);
+
+        if (error) {
+          console.warn('Profile search error:', error.message);
+          return;
+        }
+
+        const matched: UserProfile[] = (data || [])
+          .filter((p: any) => p.phone_number && p.is_public !== false)
+          .map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            phoneNumber: p.phone_number,
+            avatarUrl: p.avatar_url,
+            isPublic: p.is_public,
+          } as UserProfile));
+
         setSuggestions(matched);
       } catch (err) {
         console.warn('Profile search error:', err);
