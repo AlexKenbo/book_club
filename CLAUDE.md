@@ -63,6 +63,13 @@ Toggled via `libshare_demo_mode` in localStorage. Uses three mock users (MOCK_US
 - @heroicons/react for icons
 - Path alias: `@/*` maps to project root
 
+## Versioning
+
+Bump the version in `package.json` with every commit:
+- **patch** (0.2.0 → 0.2.1) — bug fixes, small tweaks
+- **minor** (0.2.0 → 0.3.0) — new features, UI changes
+- **major** (0.2.0 → 1.0.0) — breaking changes, major milestones
+
 ## Deployment
 
 GitHub Actions deploys to Yandex Object Storage on push to `main`. Pipeline: Node 20 → npm install → build → upload dist/ to S3-compatible storage.
