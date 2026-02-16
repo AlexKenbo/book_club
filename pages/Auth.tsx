@@ -54,7 +54,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
     setIsLoading(false);
     setStatus({
       text: via === 'call'
-        ? 'Ожидайте звонок — робот продиктует код.'
+        ? 'Ожидайте звонок — введите 4 последние цифры входящего номера.'
         : 'Код отправлен в Telegram.',
       type: 'info'
     });
@@ -133,7 +133,7 @@ const Auth: React.FC<AuthProps> = ({ onSignedIn }) => {
         {step === 'code' && (
           <div className="space-y-4">
             <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">
-              {channel === 'call' ? 'Код из звонка' : 'Код из Telegram'}
+              {channel === 'call' ? '4 последние цифры входящего номера' : 'Код из Telegram'}
             </label>
             <input
               type="text"

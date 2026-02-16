@@ -88,31 +88,63 @@ serve(async (req: Request) => {
       return c;
     };
 
-    const code = generateCode(OTP_LENGTH);
+    let code: string;
 
     if (SMSC_TEST) {
+      code = '1234';
       console.log('SMSC_TEST enabled. OTP code:', { phone: normalizedPhone, code, channel });
+    } else if (channel === 'call') {
+      // wait_call: SMSC звонит пользователю, код = последние 4 цифры входящего номера
+      const callUrl = `https://smsc.ru/sys/wait_call.php?login=${encodeURIComponent(
+        SMSC_LOGIN
+      )}&psw=${encodeURIComponent(
+        SMSC_PASSWORD
+      )}&phone=${encodeURIComponent(normalizedPhone)}&fmt=3`;
+
+      const callResponse = await fetch(callUrl);
+      const callResult = await callResponse.json();
+
+      if (!callResponse.ok || callResult?.error) {
+        console.error('SMSC wait_call error:', callResult);
+        const payload: Record<string, unknown> = { error: 'Не удалось инициировать звонок' };
+        if (SMSC_DEBUG) payload.details = callResult ?? null;
+        return new Response(JSON.stringify(payload), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const callerPhone = callResult?.phone;
+      if (!callerPhone) {
+        console.error('SMSC wait_call: no phone in response', callResult);
+        const payload: Record<string, unknown> = { error: 'Нет номера звонящего' };
+        if (SMSC_DEBUG) payload.details = callResult ?? null;
+        return new Response(JSON.stringify(payload), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      code = callerPhone.slice(-4);
     } else {
+      // telegram: генерируем код и отправляем через Telegram
+      code = generateCode(OTP_LENGTH);
       const message = `Код подтверждения: ${code}`;
-      const channelParam = channel === 'call' ? '&call=1' : '&tg=1';
-      const sendUrl = `https://smsc.ru/sys/send.php?login=${encodeURIComponent(
+      const tgUrl = `https://smsc.ru/sys/send.php?login=${encodeURIComponent(
         SMSC_LOGIN
       )}&psw=${encodeURIComponent(
         SMSC_PASSWORD
       )}&phones=${encodeURIComponent(normalizedPhone)}&mes=${encodeURIComponent(
         message
-      )}${channelParam}&fmt=3&charset=utf-8`;
+      )}&tg=1&fmt=3&charset=utf-8`;
 
-      const sendResponse = await fetch(sendUrl);
-      const sendResult = await sendResponse.json();
+      const tgResponse = await fetch(tgUrl);
+      const tgResult = await tgResponse.json();
 
-      if (!sendResponse.ok || sendResult?.error) {
-        console.error(`SMSC ${channel} error:`, sendResult);
-        const label = channel === 'call' ? 'call' : 'Telegram message';
-        const payload: Record<string, unknown> = { error: `Failed to send ${label}` };
-        if (SMSC_DEBUG) {
-          payload.details = sendResult ?? null;
-        }
+      if (!tgResponse.ok || tgResult?.error) {
+        console.error('SMSC Telegram error:', tgResult);
+        const payload: Record<string, unknown> = { error: 'Не удалось отправить код в Telegram' };
+        if (SMSC_DEBUG) payload.details = tgResult ?? null;
         return new Response(JSON.stringify(payload), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
